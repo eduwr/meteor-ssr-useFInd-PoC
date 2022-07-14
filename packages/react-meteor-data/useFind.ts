@@ -60,13 +60,16 @@ const checkCursor = <T>(cursor: Mongo.Cursor<T> | Partial<{ _mongo: any, _cursor
 }
 
 const useFindClient = <T = any>(factory: () => (Mongo.Cursor<T> | undefined | null), deps: DependencyList = []) => {
+  console.log("Client called")
   let [data, dispatch] = useReducer<Reducer<T[], useFindActions<T>>>(
     useFindReducer,
     []
   )
 
   const { current: refs } = useRef<{ useReducerData: Boolean, data: T[] }>({ useReducerData: false, data: [] })
-
+  console.log({
+    data, refs
+  })
   const cursor = useMemo(() => (
     // To avoid creating side effects in render, opt out
     // of Tracker integration altogether.
@@ -77,7 +80,7 @@ const useFindClient = <T = any>(factory: () => (Mongo.Cursor<T> | undefined | nu
         checkCursor(c)
       }
       refs.data = (c instanceof Mongo.Cursor)
-        ? c.fetch()
+        ? c.fetchAsync()
         : null
       return c
     })
@@ -125,11 +128,12 @@ const useFindClient = <T = any>(factory: () => (Mongo.Cursor<T> | undefined | nu
   return refs.useReducerData ? data : refs.data
 }
 
-const useFindServer = <T = any>(factory: () => Mongo.Cursor<T> | undefined | null, deps: DependencyList) => (
+const useFindServer = async  <T = any>(factory: () => Mongo.Cursor<T> | undefined | null, deps: DependencyList) => (
   Tracker.nonreactive(() => {
+    console.log("Tracker non reactive server")
     const cursor = factory()
     if (Meteor.isDevelopment) checkCursor(cursor)
-    return cursor?.fetch?.() ?? null
+    return cursor?.fetchAsync?.() ?? null
   })
 )
 
