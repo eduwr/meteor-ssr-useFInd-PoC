@@ -60,7 +60,6 @@ const checkCursor = <T>(cursor: Mongo.Cursor<T> | Partial<{ _mongo: any, _cursor
 }
 
 const useFindClient = <T = any>(factory: () => (Mongo.Cursor<T> | undefined | null), deps: DependencyList = []) => {
-  console.log("Client called")
   let [data, dispatch] = useReducer<Reducer<T[], useFindActions<T>>>(
     useFindReducer,
     []
@@ -128,12 +127,17 @@ const useFindClient = <T = any>(factory: () => (Mongo.Cursor<T> | undefined | nu
   return refs.useReducerData ? data : refs.data
 }
 
-const useFindServer = async  <T = any>(factory: () => Mongo.Cursor<T> | undefined | null, deps: DependencyList) => (
+const useFindServer = async  <T = any>(factory: () => Mongo.Cursor<T> | undefined | null, deps: DependencyList) =>  (
   Tracker.nonreactive(() => {
-    console.log("Tracker non reactive server")
     const cursor = factory()
     if (Meteor.isDevelopment) checkCursor(cursor)
-    return cursor?.fetchAsync?.() ?? null
+
+
+    if(cursor?.fetchAsync) {
+      return cursor.fetchAsync()
+    }
+
+    return cursor?.fetch?.() ?? null
   })
 )
 
